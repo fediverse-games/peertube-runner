@@ -1,4 +1,4 @@
-FROM node:23-slim
+FROM node:25-slim
 
 LABEL org.opencontainers.image.source=https://github.com/fediverse-games/peertube-runner-docker
 LABEL org.opencontainers.image.description="Peertube Runner"
@@ -28,7 +28,11 @@ COPY entrypoint.sh /
 
 RUN apt update \
     && apt install -y pipx ffmpeg --no-install-recommends \
-    && apt clean && rm -rf /var/lib/apt/lists/* && pipx install whisper-ctranslate2 && pipx ensurepath && npm i @peertube/peertube-runner@0.1.3 && chmod +x /entrypoint.sh
+    && apt clean && rm -rf /var/lib/apt/lists/* && pipx install whisper-ctranslate2 && pipx ensurepath && npm i @peertube/peertube-runner@0.3.0 && chmod +x /entrypoint.sh \
+    && groupadd -r peertube && useradd -r -g peertube -d /home/peertube -s /bin/bash peertube \
+    && chown -R peertube:peertube /home/peertube
+
+USER peertube
 
 VOLUME [ "/home/peertube/.config/peertube-runner-nodejs/" ]
 
