@@ -30,6 +30,7 @@ RUN apt update \
     && apt install -y pipx ffmpeg --no-install-recommends \
     && apt clean && rm -rf /var/lib/apt/lists/* && pipx install whisper-ctranslate2 && pipx ensurepath && npm i @peertube/peertube-runner@0.3.0 && chmod +x /entrypoint.sh \
     && groupadd -r peertube && useradd -r -g peertube -d /home/peertube -s /bin/bash peertube \
+    && mkdir -p /home/peertube/.config/peertube-runner-nodejs \
     && chown -R peertube:peertube /home/peertube
 
 USER peertube

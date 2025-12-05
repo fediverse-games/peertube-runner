@@ -15,13 +15,13 @@ then
     export PEERTUBE_RUNNER_NAME="${HOSTNAME}"
 fi
 
-if [ -f "${PEERTUBE_CONFIG}" ] ]
+if [ -f "${PEERTUBE_CONFIG}" ]
 then
     echo "Mounted config file detected, copying to config directory."
     mv "${PEERTUBE_CONFIG}" "${PEERTUBE_CONFIG_DIR}/config.toml"
 else
     echo "Creating config file from env..."
-    if [ -z "${PEERTUBE_URL}" ] ]
+    if [ -z "${PEERTUBE_URL}" ]
     then
         echo 'ERROR: Peertube URL required to run container. Terminating...'
         exit 1
@@ -58,7 +58,7 @@ EOF
 fi
 
 
-echo "Starting peertube runner now...
+echo "Starting peertube runner now..."
 
 # Start server in background to allow registration
 npx peertube-runner server ${PEERTUBE_RUNNER_ADDITIONAL_ARGS} --id "${PEERTUBE_RUNNER_NAME}" &
