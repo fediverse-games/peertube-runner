@@ -81,7 +81,9 @@ if ! grep -q "^\[\[registeredInstances\]\]" "${PEERTUBE_CONFIG_DIR}/${PEERTUBE_C
     echo "First run detected - starting server and registering..."
 
     # Start server in background
-    npx peertube-runner server ${PEERTUBE_RUNNER_ADDITIONAL_ARGS} ${JOB_TYPES_ARG} --id "${PEERTUBE_RUNNER_NAME}" &
+    # Redirect stderr to a temp file to capture crash logs
+    SERVER_LOG=$(mktemp)
+    npx peertube-runner server ${PEERTUBE_RUNNER_ADDITIONAL_ARGS} ${JOB_TYPES_ARG} --id "${PEERTUBE_RUNNER_NAME}" 2>"${SERVER_LOG}" &
     SERVER_PID=$!
     
     # Wait for server to create socket
@@ -101,14 +103,21 @@ if ! grep -q "^\[\[registeredInstances\]\]" "${PEERTUBE_CONFIG_DIR}/${PEERTUBE_C
         echo "Expected socket at: /home/peertube/.local/share/peertube-runner-nodejs/${PEERTUBE_RUNNER_NAME}/peertube-runner.sock"
         echo "Checking server process..."
         if ! kill -0 "${SERVER_PID}" 2>/dev/null; then
-            echo "Server process died. Check logs above for errors."
+            echo "Server process died. Server error output:"
+            cat "${SERVER_LOG}"
         else
             echo "Server process is running but socket not created. Listing data directory:"
             ls -la "/home/peertube/.local/share/peertube-runner-nodejs/" || true
+            echo "Server error output:"
+            cat "${SERVER_LOG}"
         fi
+        rm -f "${SERVER_LOG}"
         kill "${SERVER_PID}" 2>/dev/null || true
         exit 1
     fi
+
+    # Clean up the log file on success
+    rm -f "${SERVER_LOG}"
     
     # Register the runner
     npx peertube-runner register \
