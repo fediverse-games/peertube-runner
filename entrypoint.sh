@@ -39,7 +39,7 @@ else
     # Create initial config file without registeredInstances
     cat > "${PEERTUBE_CONFIG_DIR}/${PEERTUBE_CONFIG}" <<EOF
 [jobs]
-concurrency = ${CONCURRENT_JOBS}
+concurrency = ${PEERTUBE_JOBS_CONCURRENCY}
 
 [ffmpeg]
 threads = ${FFMPEG_THREADS}
@@ -86,13 +86,29 @@ if ! grep -q "^\[\[registeredInstances\]\]" "${PEERTUBE_CONFIG_DIR}/${PEERTUBE_C
     
     # Wait for server to create socket
     echo "Waiting for server to start..."
-    for i in {1..30}; do
+    SOCKET_FOUND=0
+    for i in {1..60}; do
         if [ -S "/home/peertube/.local/share/peertube-runner-nodejs/${PEERTUBE_RUNNER_NAME}/peertube-runner.sock" ]; then
             echo "Server started, registering runner..."
+            SOCKET_FOUND=1
             break
         fi
         sleep 1
     done
+
+    if [ "${SOCKET_FOUND}" -eq 0 ]; then
+        echo "ERROR: Server socket did not appear after 60 seconds"
+        echo "Expected socket at: /home/peertube/.local/share/peertube-runner-nodejs/${PEERTUBE_RUNNER_NAME}/peertube-runner.sock"
+        echo "Checking server process..."
+        if ! kill -0 "${SERVER_PID}" 2>/dev/null; then
+            echo "Server process died. Check logs above for errors."
+        else
+            echo "Server process is running but socket not created. Listing data directory:"
+            ls -la "/home/peertube/.local/share/peertube-runner-nodejs/" || true
+        fi
+        kill "${SERVER_PID}" 2>/dev/null || true
+        exit 1
+    fi
     
     # Register the runner
     npx peertube-runner register \
