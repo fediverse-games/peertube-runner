@@ -80,16 +80,28 @@ fi
 if ! grep -q "^\[\[registeredInstances\]\]" "${PEERTUBE_CONFIG_DIR}/${PEERTUBE_CONFIG}"; then
     echo "First run detected - starting server and registering..."
 
+    # Debug: show the actual command being run
+    echo "DEBUG: JOB_TYPES_ARG='${JOB_TYPES_ARG}'"
+    echo "DEBUG: Running command: npx peertube-runner server ${PEERTUBE_RUNNER_ADDITIONAL_ARGS} ${JOB_TYPES_ARG} --id ${PEERTUBE_RUNNER_NAME}"
+
     # Start server in background
-    # Redirect stderr to a temp file to capture crash logs
+    # Capture both stdout and stderr to see all output
     SERVER_LOG=$(mktemp)
-    npx peertube-runner server ${PEERTUBE_RUNNER_ADDITIONAL_ARGS} ${JOB_TYPES_ARG} --id "${PEERTUBE_RUNNER_NAME}" 2>"${SERVER_LOG}" &
+    npx peertube-runner server ${PEERTUBE_RUNNER_ADDITIONAL_ARGS} ${JOB_TYPES_ARG} --id "${PEERTUBE_RUNNER_NAME}" >"${SERVER_LOG}" 2>&1 &
     SERVER_PID=$!
+
+    echo "DEBUG: Server PID=${SERVER_PID}"
     
     # Wait for server to create socket
     echo "Waiting for server to start..."
     SOCKET_FOUND=0
     for i in {1..60}; do
+        # Check if process died early
+        if ! kill -0 "${SERVER_PID}" 2>/dev/null; then
+            echo "ERROR: Server process died after ${i} seconds"
+            break
+        fi
+
         if [ -S "/home/peertube/.local/share/peertube-runner-nodejs/${PEERTUBE_RUNNER_NAME}/peertube-runner.sock" ]; then
             echo "Server started, registering runner..."
             SOCKET_FOUND=1
@@ -99,17 +111,22 @@ if ! grep -q "^\[\[registeredInstances\]\]" "${PEERTUBE_CONFIG_DIR}/${PEERTUBE_C
     done
 
     if [ "${SOCKET_FOUND}" -eq 0 ]; then
-        echo "ERROR: Server socket did not appear after 60 seconds"
+        echo "ERROR: Server socket did not appear"
         echo "Expected socket at: /home/peertube/.local/share/peertube-runner-nodejs/${PEERTUBE_RUNNER_NAME}/peertube-runner.sock"
         echo "Checking server process..."
         if ! kill -0 "${SERVER_PID}" 2>/dev/null; then
-            echo "Server process died. Server error output:"
+            echo "Server process died. Full server output:"
+            echo "----------------------------------------"
             cat "${SERVER_LOG}"
+            echo "----------------------------------------"
         else
-            echo "Server process is running but socket not created. Listing data directory:"
+            echo "Server process is still running but socket not created."
+            echo "Listing data directory:"
             ls -la "/home/peertube/.local/share/peertube-runner-nodejs/" || true
-            echo "Server error output:"
+            echo "Full server output so far:"
+            echo "----------------------------------------"
             cat "${SERVER_LOG}"
+            echo "----------------------------------------"
         fi
         rm -f "${SERVER_LOG}"
         kill "${SERVER_PID}" 2>/dev/null || true
