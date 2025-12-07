@@ -12,7 +12,8 @@ echo 'Building peertube config...'
 
 if [ -z "${PEERTUBE_RUNNER_NAME}" ]
 then
-    export PEERTUBE_RUNNER_NAME="${HOSTNAME}"
+    # Hash hostname to 8 characters to avoid socket path length limits
+    export PEERTUBE_RUNNER_NAME="runner-$(echo -n "${HOSTNAME}" | md5sum | cut -c1-8)"
 fi
 
 if [ -f "${PEERTUBE_CONFIG}" ]
