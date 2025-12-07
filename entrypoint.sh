@@ -39,7 +39,7 @@ else
     # Create initial config file without registeredInstances
     cat > "${PEERTUBE_CONFIG_DIR}/${PEERTUBE_CONFIG}" <<EOF
 [jobs]
-concurrency = ${FFMPEG_CONCURRENT_JOBS}
+concurrency = ${CONCURRENT_JOBS}
 
 [ffmpeg]
 threads = ${FFMPEG_THREADS}
@@ -69,11 +69,19 @@ trap_handler() {
 
 trap trap_handler SIGTERM SIGINT
 
+# Build job types argument if set
+JOB_TYPES_ARG=""
+if [ -n "${PEERTUBE_RUNNER_JOB_TYPES:-}" ]; then
+    for job_type in ${PEERTUBE_RUNNER_JOB_TYPES}; do
+        JOB_TYPES_ARG="${JOB_TYPES_ARG} --enable-job ${job_type}"
+    done
+fi
+
 if ! grep -q "^\[\[registeredInstances\]\]" "${PEERTUBE_CONFIG_DIR}/${PEERTUBE_CONFIG}"; then
     echo "First run detected - starting server and registering..."
-    
+
     # Start server in background
-    npx peertube-runner server ${PEERTUBE_RUNNER_ADDITIONAL_ARGS} --id "${PEERTUBE_RUNNER_NAME}" &
+    npx peertube-runner server ${PEERTUBE_RUNNER_ADDITIONAL_ARGS} ${JOB_TYPES_ARG} --id "${PEERTUBE_RUNNER_NAME}" &
     SERVER_PID=$!
     
     # Wait for server to create socket
@@ -100,5 +108,5 @@ if ! grep -q "^\[\[registeredInstances\]\]" "${PEERTUBE_CONFIG_DIR}/${PEERTUBE_C
     wait "${SERVER_PID}"
 else
     # Already registered, just start server
-    exec npx peertube-runner server ${PEERTUBE_RUNNER_ADDITIONAL_ARGS} --id "${PEERTUBE_RUNNER_NAME}"
+    exec npx peertube-runner server ${PEERTUBE_RUNNER_ADDITIONAL_ARGS} ${JOB_TYPES_ARG} --id "${PEERTUBE_RUNNER_NAME}"
 fi

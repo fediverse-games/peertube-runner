@@ -1,7 +1,7 @@
 FROM node:25-trixie-slim
 
 LABEL org.opencontainers.image.source=https://github.com/fediverse-games/peertube-runner-docker
-LABEL org.opencontainers.image.description="Peertube Runner"
+LABEL org.opencontainers.image.description="Peertube Runner (No Whisper - Transcoding Only)"
 LABEL org.opencontainers.image.licenses=GPL-3.0-or-later
 
 ENV DEBIAN_FRONTEND=noninteractive
@@ -13,13 +13,13 @@ ENV PEERTUBE_CONFIG="config.toml"
 ENV PEERTUBE_RUNNER_NAME=""
 ENV PEERTUBE_URL=""
 ENV PEERTUBE_RUNNER_TOKEN=""
-ENV PEERTUBE_RUNNER_DESCRIPTION="Peertube Runner"
+ENV PEERTUBE_RUNNER_DESCRIPTION="Peertube Runner (Transcoding Only)"
 ENV PEERTUBE_TRANSCRIPTION_ENGINE="whisper-ctranslate2"
 ENV PEERTUBE_TRANSCRIPTION_MODEL="small"
 ENV PEERTUBE_TRANSCRIPTION_ENGINEPATH="/usr/local/bin/whisper-ctranslate2"
 ENV PEERTUBE_TRANSCRIPTION_COMPUTE_TYPE=""
 ENV PEERTUBE_RUNNER_ADDITIONAL_ARGS=""
-ENV PEERTUBE_RUNNER_JOB_TYPES=""
+ENV PEERTUBE_RUNNER_JOB_TYPES="vod-web-video-transcoding vod-hls-transcoding vod-audio-merge-transcoding live-rtmp-hls-transcoding video-studio-transcoding"
 
 WORKDIR /home/peertube/
 
@@ -29,8 +29,7 @@ ENV PATH="/home/peertube/.local/bin:${PATH}"
 COPY entrypoint.sh /
 
 RUN apt update \
-    && apt install -y python3-pip ffmpeg --no-install-recommends \
-    && pip3 install --break-system-packages --no-cache-dir whisper-ctranslate2 \
+    && apt install -y ffmpeg --no-install-recommends \
     && apt clean && rm -rf /var/lib/apt/lists/* \
     && npm i @peertube/peertube-runner@0.3.0 && chmod +x /entrypoint.sh \
     && groupadd -r peertube && useradd -r -g peertube -d /home/peertube -s /bin/bash peertube \
