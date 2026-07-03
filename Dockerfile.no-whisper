@@ -19,7 +19,7 @@ ENV PEERTUBE_TRANSCRIPTION_MODEL="small"
 ENV PEERTUBE_TRANSCRIPTION_ENGINEPATH="/usr/local/bin/whisper-ctranslate2"
 ENV PEERTUBE_TRANSCRIPTION_COMPUTE_TYPE=""
 ENV PEERTUBE_RUNNER_ADDITIONAL_ARGS=""
-ENV PEERTUBE_RUNNER_JOB_TYPES="vod-web-video-transcoding vod-hls-transcoding vod-audio-merge-transcoding live-rtmp-hls-transcoding video-studio-transcoding"
+ENV PEERTUBE_RUNNER_JOB_TYPES="vod-web-video-transcoding vod-hls-transcoding vod-audio-merge-transcoding live-rtmp-hls-transcoding video-studio-transcoding generate-video-storyboard"
 
 WORKDIR /home/peertube/
 
@@ -31,7 +31,7 @@ COPY entrypoint.sh /
 RUN apt update \
     && apt install -y ffmpeg --no-install-recommends \
     && apt clean && rm -rf /var/lib/apt/lists/* \
-    && npm i @peertube/peertube-runner@0.3.0 && chmod +x /entrypoint.sh \
+    && npm i @peertube/peertube-runner@0.6.0 && chmod +x /entrypoint.sh \
     && groupadd -r peertube && useradd -r -g peertube -d /home/peertube -s /bin/bash peertube \
     && mkdir -p /home/peertube/.config/peertube-runner-nodejs /home/peertube/.local/bin \
     && chown -R peertube:peertube /home/peertube
